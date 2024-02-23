@@ -1,3 +1,5 @@
+/* eslint-disable no-undef */
+/* eslint-disable no-restricted-globals */
 import React, { useState } from 'react';
 import { SafeAreaView, StyleSheet, View } from 'react-native';
 import {
@@ -9,13 +11,49 @@ import {
   Text,
 } from '@chakra-ui/react';
 import { EmailIcon, LockIcon, ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
+import { gql, useMutation } from '@apollo/client';
+
+const LOGIN_QUERY = gql`
+  mutation {
+    generateCustomerToken(
+      email: "eduper11@yopmail.com"
+      password: "Hanzo11."
+    ) {
+      token
+    }
+  }
+`;
 
 export default function Login({ navigation, route }) {
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+  });
   const [show, setShow] = useState(false);
   const handleClick = () => setShow(!show);
-  const valUser = () => {
-    navigation.navigate('Home');
+
+  const [generateCustomerToken] = useMutation(LOGIN_QUERY);
+
+  const handleInputChange = (event) => {
+    const { name, value } = event.target;
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      [name]: value,
+    }))
   }
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+
+    const { email, password } = formData;
+    generateCustomerToken({ variables: { email, password } })
+      .then((response) => {
+        navigation.navigate('Home');
+      })
+      .catch((error) => {
+        navigation.navigate('Error', {message: error.message});
+      });
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -27,26 +65,42 @@ export default function Login({ navigation, route }) {
           <InputLeftElement pointerEvents='none'>
             <EmailIcon color='gray.500' />
           </InputLeftElement>
-          <Input type='email' placeholder='Email' variant='flushed' />
+          <Input
+            type='email'
+            placeholder='Email'
+            variant='flushed'
+            name='email'
+            value={formData.email}
+            onChange={handleInputChange}
+          />
         </InputGroup>
       </View>
 
       <View>
-        <InputGroup>
-          <InputLeftElement pointerEvents='none'>
-            <LockIcon color='gray.500' />
-          </InputLeftElement>
-          <Input type={show ? 'text' : 'password'} placeholder='Password' variant='flushed' />
-          <InputRightElement>
-            <Button onClick={handleClick}>
-              {show ? <ViewOffIcon /> : <ViewIcon />}
-            </Button>
-          </InputRightElement>
-        </InputGroup>
+        <form onSubmit={handleSubmit}>
+          <InputGroup>
+            <InputLeftElement pointerEvents='none'>
+              <LockIcon color='gray.500' />
+            </InputLeftElement>
+            <Input
+              type={show ? 'text' : 'password'}
+              placeholder='Password'
+              variant='flushed'
+              name='password'
+              value={formData.password}
+              onChange={handleInputChange}
+            />
+            <InputRightElement>
+              <Button onClick={handleClick}>
+                {show ? <ViewOffIcon /> : <ViewIcon />}
+              </Button>
+            </InputRightElement>
+          </InputGroup>
+        </form>
       </View>
 
       <View style={styles.conts}>
-        <Button onClick={valUser}>Entrar</Button>
+        <Button onClick={handleSubmit}>Entrar</Button>
       </View>
       <View style={styles.conts}>
         <Button variant='link'>
